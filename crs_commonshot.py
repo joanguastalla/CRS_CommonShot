@@ -4,20 +4,21 @@ from cubicinterpol import *
 from common_receiver import common_receiver
 
 
-def crs_cs(m0,t0,U,h,s,ds,dh,w,dt,alpha,dalpha,v0,vmin,vmax,hyperbola_jump):
+def crs_cs(m0,t0,U,h,s,ds,dh,w,dt,alphamin,alphamax,dalpha,v0,tdown,tup,hyperbola_jump):
     """
-    m0     -  Central zero-offset ray midpoint
-    t0     -  Time of propagation of the central zero-offset ray
-    U      -  All Common shot sections
-    h      -  Vector of offsets 
-    s      -  Vector of shots
-    w      -  Wavelet duration(s)
-    dt     -  Time Sampling(s)
-    alpha  -  Maximum emergence angle of ZO trace (m0,t0)
-    dalpha -  Angle sampling for hyperbola fitting
-    v0     -  Velocity at ZO location
-    vmin   -  Minimum curvature of hyperbolic fitting
-    vmax   -  Maximum curvature of hyperbolic fitting
+    m0        -  Central zero-offset ray midpoint
+    t0        -  Time of propagation of the central zero-offset ray
+    U         -  All Common shot sections
+    h         -  Vector of offsets 
+    s         -  Vector of shots
+    w         -  Wavelet duration(s)
+    dt        -  Time Sampling(s)
+    alphamin  -  Minimum emergence angle in degrees of ZO trace (m0,t0)  
+    alphamax  -  Maximum emergence angle in degrees of ZO trace (m0,t0)
+    dalpha    -  Angle sampling for hyperbola fitting
+    v0        -  Velocity at ZO location
+    tdown     -  Minimum time, associated with hyperbola fitting  at h[end], given by (t0-tdown)
+    tup       -  Maximum time, associated with hyperbola fitting  at h[end], given by (t0+tup)  
     hyperbola_jump  - Number of samples in diference of time in the hyperbola fitting
                       between h[end] and h[0] 
                    
@@ -38,11 +39,10 @@ def crs_cs(m0,t0,U,h,s,ds,dh,w,dt,alpha,dalpha,v0,vmin,vmax,hyperbola_jump):
 
     """
 
-    size=np.shape(U)
-    ns=size[0]
-    while_counter=1
-    alpha=alpha*np.pi/180
-    dalpha=dalpha*np.pi/180 
+    ndown=min(int(t0/dt),int(tdown/dt))
+    nup=int(tup/dt)
+    nsamples=nup+ndown
+    emerge=np.radians([alphamin,alphamax,dalpha])
     shotind=int((m0/ds)*len(h))
     stack_traces=np.arange(shotind,shotind+len(h))
     
@@ -59,8 +59,7 @@ def crs_cs(m0,t0,U,h,s,ds,dh,w,dt,alpha,dalpha,v0,vmin,vmax,hyperbola_jump):
     nsw_lim=nsw//2
     janela=np.arange(-nsw_lim+1,nsw_lim+1)
     factor=2/v0
-    alfas=np.arange(-alpha,alpha+dalpha,dalpha)
-    vel=np.array([0,vmin])
+    vel=np.zeros([2,])
     vel_max=np.zeros([2,])
     alfa_max=np.zeros([2,])
     semblance_max=0
@@ -84,18 +83,13 @@ def crs_cs(m0,t0,U,h,s,ds,dh,w,dt,alpha,dalpha,v0,vmin,vmax,hyperbola_jump):
 # mid_aperture=vel[1]/2*np.sqrt(t0*w)
 # h_aperture=h[abs[h]<mid_aperture]
   
-    for alfa in alfas: 
+    for alfa in np.arange(emerge[0],emerge[1]+emerge[2],emerge[2]): 
         scale=factor*np.sin(alfa)
         Semblance=0
-        print(vmin)
-        tmax=(t0 + scale*h[-1])**2 + np.sign(vmin)*(h[-1]/vmin)**2
-        print(tmax)
-        tmax=np.sqrt(max(0,tmax))
-        print("Alfa: ",alfa)
-        while vel[1] < vmax:
+        for ii in range(0,nsamples,hyperbola_jump):
+            vel[1]=((t0 + (ii-ndown)*dt)**2 - (t0+scale*h[-1])**2)/(h[-1]**2)
             for hh in range(len(h)):
-                 tdifrac=np.sqrt((t0 + scale*h[hh])**2 + \
-                 np.sign(vel[1])*(h[hh]/vel[1])**2)
+                 tdifrac=np.sqrt((t0 + scale*h[hh])**2 + vel[1]*h[hh]**2)
                  aux=cubic_interpol(U[:,stack_traces[hh]],dt,tdifrac + \
                  dt*janela)
                  trsum+=aux
@@ -107,12 +101,6 @@ def crs_cs(m0,t0,U,h,s,ds,dh,w,dt,alpha,dalpha,v0,vmin,vmax,hyperbola_jump):
             indmax=np.argmax([Semblance,semb])
             Semblance=np.max([Semblance,semb])
             vel[0]=vel[indmax]
-            vel[1]=((tmax + hyperbola_jump*while_counter*dt)**2 - (t0 + scale*h[-1])**2)/(h[-1]**2)
-            vel[1]=np.sign(vel[1])*np.sqrt(np.abs(1/vel[1]))
-            print("Ofsset maximo: ",h[-1])
-            print("Velocidade: ",vel[1])
-            print("Tempo máximo: ",np.sqrt((t0 + scale*h[-1])**2 + np.sign(vel[1])*(h[-1]/vel[1])**2))
-            while_counter+=1
         vel_max[1]=vel[0]
         alfa_max[1]=alfa
         semblance_max=max(semblance_max,Semblance)
