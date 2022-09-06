@@ -27,19 +27,12 @@ def cubic_interpol(s,dt,time):
 		tt=t/dt
 		ind=max(0,int(np.floor(tt)))
 		ind=min(ind,len(s)-2)
-		if abs(np.ceil(t/dt))==np.floor(t/dt):
-			interpol=np.append(interpol,s[int(tt)])
+		if abs(np.ceil(t/dt))==int(t/dt) or t<0:
+			interpol=np.append(interpol,s[ind])
 			continue
 		else:
-			if 0 < ind  < (len(s)-2):
-				alpha[0]=s[ind+1]-s[ind-1]
-				alpha[1]=s[ind+2]-s[ind]
-			elif ind==0:
-				alpha[0]=s[1]
-				alpha[1]=s[2]-s[0]
-			else:
-				alpha[0]=s[-1]-s[-3]
-				alpha[1]=-s[-2]
+			alpha[0]=s[ind+1]-s[ind-1]
+			alpha[1]=s[ind+2]-s[ind]
 			alpha=alpha/(2*dt)
 			A[0,:]=np.power(ind*dt,powers)[np.newaxis]
 			A[1,:]=np.power((ind+1)*dt,powers)[np.newaxis]

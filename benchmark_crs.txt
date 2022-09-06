@@ -1,0 +1,18 @@
+Benchmark  1
+
+- Single trace
+- 400 samples
+
+testing files: testcrs.py, testcrs_concurrent.py                           
+
+
+1 - Serial (testcrs.py)
+
+580 seconds
+
+2 - Concurrent (testcrs_concurrent.py) 
+
+
++ Workers: 16
+  
+

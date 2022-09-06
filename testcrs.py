@@ -1,30 +1,47 @@
 import numpy as np
 from crs_commonshot import *
+import matplotlib.pyplot as plt
+import time
+#import multiprocessing as mp
 with open('/home/joan/Pluto_Dataset/pluto.bin','rb') as f:
 	data=f.read()
 	U=np.frombuffer(data,dtype='f')
+
+
+# Data sizes(f: Ricker Wavelet peak frequency in Hz)
 ns=1126
-ds=150
 nh=338
-dh=75
 nshots=694
-dt=0.008
-v0=1500
-s=np.arange(0,694*ds,ds)
-h=12*dh + np.arange(0,338*dh,dh)
-vmin=1500
-vmax=4000
 f=15
-alpha=30
-dalpha=0.1
-w=np.sqrt(6)/(np.pi*f)
+
+# Function crs_cs required parameters
 U=np.reshape(U,[ns,nh*nshots],order='F')
-Semblance=np.zeros([ns,nshots])
-time=np.arange(0,ns*dt,dt)
-meter2feet=3.28084
-# Velocities in feet/s
-vmin,vmax,v0=vmin*meter2feet,vmax*meter2feet,v0*meter2feet
-for ii in range(len(s)):
-	for jj in range(ns): 
-		Semblance[ii,jj]=CRSCS(U,h,s,w,s[ii],time[jj],dt,alpha,dalpha,v0,vmin,vmax)
+ds=150
+dh=75/2
+h=(12*dh + np.arange(0,338*dh,dh))/2
+s=np.arange(0,694*ds,ds)
+w=np.sqrt(6)/(np.pi*f)
+dt=0.008
+t=np.arange(0,1126*dt,dt)
+alpha=20
+dalpha=1
+v0=1.5
+vmin=-1.5
+vmax=1.8
+hyperbola_jump=2
+
+# Scale transform feet to km unit
+feet2m=.3048
+m2km=0.001
+s,h=s*feet2m*m2km,h*feet2m*m2km
+ds,dh=ds*feet2m*m2km,dh*feet2m*m2km
+
+
+Semblance=np.zeros([ns*nshots,])
+ntimes=1
+start=time.time()
+for jj in [400]:
+    Semblance[jj]=crs_cs(s[200],t[jj],U,h,s,ds,dh,w,dt,alpha,dalpha,v0,vmin,vmax,hyperbola_jump)
+end=time.time()
+print("Elapsed time is: {} seconds".format(end-start))
 
