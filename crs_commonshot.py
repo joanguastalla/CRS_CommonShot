@@ -38,7 +38,6 @@ def crs_cs(m0,t0,U,h,s,ds,dh,w,dt,alphamin,alphamax,dalpha,v0,tdown,tup,hyperbol
     dh=h[1]-h[0]
 
     """
-
     ndown=min(int(t0/dt),int(tdown/dt))
     nup=int(tup/dt)
     nsamples=nup+ndown
@@ -49,6 +48,7 @@ def crs_cs(m0,t0,U,h,s,ds,dh,w,dt,alphamin,alphamax,dalpha,v0,tdown,tup,hyperbol
 # Reciprocity principle gives negative offsets for CS with s=m0
     
     h,geos=common_receiver(2*h,s,m0)
+    h_s=np.power(h,2)
     stack_traces=np.insert(stack_traces,0,geos)
    
 # Windowing around diffraction traveltime 
@@ -86,18 +86,17 @@ def crs_cs(m0,t0,U,h,s,ds,dh,w,dt,alphamin,alphamax,dalpha,v0,tdown,tup,hyperbol
     for alfa in np.arange(emerge[0],emerge[1]+emerge[2],emerge[2]): 
         scale=factor*np.sin(alfa)
         Semblance=0
+        tdifrac=t0*(t0 + 2*scale*h) + scale**2*h_s
         for ii in range(0,nsamples,hyperbola_jump):
             vel[1]=((t0 + (ii-ndown)*dt)**2 - (t0+scale*h[-1])**2)/(h[-1]**2)
-            for hh in range(len(h)):
-                 tdifrac=np.sqrt((t0 + scale*h[hh])**2 + vel[1]*h[hh]**2)
-                 aux=cubic_interpol(U[:,stack_traces[hh]],dt,tdifrac + \
-                 dt*janela)
-                 trsum+=aux
-                 trsum2+=np.sum(np.power(aux,2))
+            tdifrac=np.sqrt(tdifrac + vel[1]*h_s)
+            hyper_stack=np.array([cubic_interpol(U[:,stack_traces],dt,tdifrac + dt*window) for window in janela])
+            trsum=np.sum(np.power(np.sum(hyper_stack,axis=1),2))
+            trsum2=np.sum(np.power(hyper,2))
             if isinf(np.sum(np.power(trsum,2))):
                     print("happens for vel:{},alfa:{} and t0:{}".format(vel[1],alfa,t0))
                     return -1  
-            semb=np.sum(np.power(trsum,2))/(len(h)*trsum2)
+            semb=trsum/(len(h)*trsum2)
             indmax=np.argmax([Semblance,semb])
             Semblance=np.max([Semblance,semb])
             vel[0]=vel[indmax]
