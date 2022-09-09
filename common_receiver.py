@@ -1,5 +1,5 @@
 import numpy as np
-def common_receiver(h,s,g):
+def common_receiver(h,s,ds,dh,g):
     """
     h - offsets
     s - shots 
@@ -12,8 +12,6 @@ def common_receiver(h,s,g):
     Returned parameters are offsets and traces in-
     dexes to get the CR section from the CS data.
     """
-    ds=s[1]-s[0]
-    dh=h[1]-h[0]
     ratio=ds//dh
     shotind=(g-s[0])//ds
     gind=max(0,shotind - int((len(h)-1)/ratio)-h[0]//ds)

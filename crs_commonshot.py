@@ -1,18 +1,17 @@
 import numpy as np
-from math import isinf
 from cubicinterpol import *
 from common_receiver import common_receiver
-
+from math import isnan,isinf
 
 def crs_cs(m0,t0,U,h,s,ds,dh,w,dt,alphamin,alphamax,dalpha,v0,tdown,tup,hyperbola_jump):
     """
     m0        -  Central zero-offset ray midpoint
     t0        -  Time of propagation of the central zero-offset ray
     U         -  All Common shot sections
-    h         -  Vector of offsets 
+    h         -  Vector of full offsets 
     s         -  Vector of shots
-    w         -  Wavelet duration(s)
-    dt        -  Time Sampling(s)
+    w         -  Wavelet duration[s]
+    dt        -  Time Sampling[s]
     alphamin  -  Minimum emergence angle in degrees of ZO trace (m0,t0)  
     alphamax  -  Maximum emergence angle in degrees of ZO trace (m0,t0)
     dalpha    -  Angle sampling for hyperbola fitting
@@ -47,7 +46,8 @@ def crs_cs(m0,t0,U,h,s,ds,dh,w,dt,alphamin,alphamax,dalpha,v0,tdown,tup,hyperbol
     
 # Reciprocity principle gives negative offsets for CS with s=m0
     
-    h,geos=common_receiver(2*h,s,m0)
+    h,geos=common_receiver(h,s,ds,dh,m0)
+    h=h/2
     h_s=np.power(h,2)
     stack_traces=np.insert(stack_traces,0,geos)
    
@@ -63,8 +63,6 @@ def crs_cs(m0,t0,U,h,s,ds,dh,w,dt,alphamin,alphamax,dalpha,v0,tdown,tup,hyperbol
     vel_max=np.zeros([2,])
     alfa_max=np.zeros([2,])
     semblance_max=0
-    trsum=np.empty([len(janela),],dtype='float')
-    trsum2=0
 
 # Best fitting hyperbola parameters (alfa,vel), within CS section s=m0 
 
@@ -82,21 +80,17 @@ def crs_cs(m0,t0,U,h,s,ds,dh,w,dt,alphamin,alphamax,dalpha,v0,tdown,tup,hyperbol
 #                                              semblance_max[0]=Semblance
 # mid_aperture=vel[1]/2*np.sqrt(t0*w)
 # h_aperture=h[abs[h]<mid_aperture]
-  
-    for alfa in np.arange(emerge[0],emerge[1]+emerge[2],emerge[2]): 
+    for alfa in np.arange(emerge[0],emerge[1]+emerge[2],emerge[2]):
         scale=factor*np.sin(alfa)
         Semblance=0
-        tdifrac=t0*(t0 + 2*scale*h) + scale**2*h_s
+        planedifrac=np.power(t0 + scale*h,2)
         for ii in range(0,nsamples,hyperbola_jump):
-            vel[1]=((t0 + (ii-ndown)*dt)**2 - (t0+scale*h[-1])**2)/(h[-1]**2)
-            tdifrac=np.sqrt(tdifrac + vel[1]*h_s)
-            hyper_stack=np.array([cubic_interpol(U[:,stack_traces],dt,tdifrac + dt*window) for window in janela])
-            trsum=np.sum(np.power(np.sum(hyper_stack,axis=1),2))
-            trsum2=np.sum(np.power(hyper,2))
-            if isinf(np.sum(np.power(trsum,2))):
-                    print("happens for vel:{},alfa:{} and t0:{}".format(vel[1],alfa,t0))
-                    return -1  
-            semb=trsum/(len(h)*trsum2)
+            vel[1]=((t0 + (ii-ndown)*dt)**2 - planedifrac[-1])/h_s[-1]
+            tdifrac=np.sqrt(np.abs(planedifrac + vel[1]*np.power(h,2)))
+            hyper_stack=np.array([cubic_interpol(U[:,stack_traces[hh]],dt,tdifrac[hh] + dt*janela) for hh in range(len(h))])
+            trsum=np.sum(np.power(np.sum(hyper_stack,axis=0),2))
+            trsum2=np.sum(np.power(hyper_stack,2))
+            semb=trsum/(len(h)*trsum2 + 1e-20)
             indmax=np.argmax([Semblance,semb])
             Semblance=np.max([Semblance,semb])
             vel[0]=vel[indmax]

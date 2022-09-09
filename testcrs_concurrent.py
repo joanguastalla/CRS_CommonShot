@@ -4,6 +4,7 @@ from itertools import repeat
 import concurrent.futures as parallel
 import matplotlib.pyplot as plt
 import time
+from seisplot import seisplot
 #import multiprocessing as mp
 with open('/home/joan/Pluto_Dataset/pluto.bin','rb') as f:
 	data=f.read()
@@ -11,7 +12,7 @@ with open('/home/joan/Pluto_Dataset/pluto.bin','rb') as f:
 
 # Data sizes(f: Ricker Wavelet peak frequency in Hz)
 ns=1126
-nh=338
+nh=314
 nshots=694
 f=15
 
@@ -19,33 +20,33 @@ f=15
 U=np.reshape(U,[ns,nh*nshots],order='F')
 ds=150
 dh=75
-h=12*dh + np.arange(0,338*dh,dh)
+h=36*dh + np.arange(0,314*dh,dh)
 s=np.arange(0,694*ds,ds)
 w=np.sqrt(6)/(np.pi*f)
 dt=0.008
 t=np.arange(0,1126*dt,dt)
-alpha=20
-dalpha=1
-v0=1500
-vmin=1500
-vmax=1800
-hyperbola_jump=2
-
+alphamin=-10
+alphamax=20
+dalpha=2
+v0=1.5
+tdown=0
+tup=5
+hyperbola_jump=40
+chunk_best=25
 # Scale transform feet to meter unit
-feet2m=.3048
-s,h=s*feet2m,h*feet2m
-ds,dh=ds*feet2m,dh*feet2m
+feet2km=.0003048
+s,h=s*feet2km,h*feet2km/2
+ds,dh=ds*feet2km,dh*feet2km
 
 
-#fixed_args=np.array([U,h,s,ds,dh,w,dt,alpha,dalpha,v0,vmin,vmax,hyperbola_jump])
 Semblance=np.zeros([ns*nshots,])
 def auxcrs(arg):
-# ns is a global variable
-    crs_cs(s[int(arg//ns)],t[int(np.mod(arg,ns))],U,h,s,ds,dh,w,dt,alpha,dalpha,v0,vmin,vmax,hyperbola_jump)
+    crs_cs(s[int(arg//ns)],t[int(np.mod(arg,ns))],U,h,s,ds,dh,w,dt,alphamin,alphamax,dalpha,v0,tdown,tup,hyperbola_jump)
+
+seisplot(U[:,np.arange(100*len(h),101*len(h))],t0=0,dt=0.008)
 
 def main(executor,iterator):
-    return executor.map(auxcrs,iterator,chunksize=6)
-
+    return executor.map(auxcrs,iterator,chunksize=25)
 if __name__=="__main__":
     start_time=time.time()
     ntimes=range(400)
@@ -57,4 +58,5 @@ if __name__=="__main__":
         count+=1
     print("Size of semblance: {}".format(count))
     print("Elapsed time: {} seconds".format(time.time()-start_time))
-
+    # Plotting zero-offset traces
+        
