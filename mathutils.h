@@ -1,3 +1,4 @@
-void transpose_square(int n,double (*a)[n]);
-int sgn(double x);
-double* transpose_general(int nlines,int ncols,double (*a)[ncols]);
+void TransposeSquare(int n,double (*a)[n]);
+int Sgn(double x);
+double* TransposeGeneral(int nlines,int ncols,double (*a)[ncols]);
+void Linspace(double* s,double s0,double ds,unsigned n);
