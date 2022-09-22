@@ -21,11 +21,9 @@
  * */
 
 
-unsigned CommonReceiver(double* s,unsigned* geos,double* h,unsigned nh,double g){
-	double ds,dh,ratio;
+unsigned CommonReceiver(float* s,unsigned* geos,float* h,float ds,float dh,unsigned nh,float g){
+	float ratio;
 	unsigned geoind,bigoffset,lengeos,smalloffset;
-	ds=s[1]-s[0];
-	dh=h[1]-h[0];
 	ratio=ds/dh;
 	geoind=(g-s[0])/ds;
 	smalloffset=geoind - (int)(h[0]/ds);

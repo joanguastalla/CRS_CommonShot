@@ -22,7 +22,7 @@
  *      t   (input): Time for interpolating
  *      
  *  Return:
- *      double: Cubic interpolation of data in time t
+ *      float: Cubic interpolation of data in time t
  *
  *
  *  Description: With the ind=floor(t/dt) this function compute 
@@ -44,15 +44,15 @@
  * */
 
 
-double Cubicinterpol(int len,double dt,double* s,double t){
+float Cubicinterpol(int len,float dt,float* s,float t){
     int ind,n = N,info,nrhs=1;
-	double alpha[2];
-    static double A[N][N];
-    static double b[N];
-    int ipiv[N];
+	float alpha[2];
+    static float A[N][N];
+    static float b[N];
+    short ipiv[N];
 	t=fabs((Sgn(t)+1)*t/2);
 	ind=(int)t/dt;
-    if((double) ind==t/dt){
+    if((float) ind==t/dt){
 		return s[ind];
     } 
     else{
