@@ -21,15 +21,15 @@
  * */
 
 
-unsigned CommonReceiver(float* s,unsigned* geos,float* h,float ds,float dh,unsigned nh,float g){
-	float ratio;
-	unsigned geoind,bigoffset,lengeos,smalloffset;
+unsigned CommonReceiver(double* s,int* geos,double* h,double ds,double dh,unsigned nh,double g){
+	double ratio;
+	unsigned geoind,bigoffset,lengeos,smalloffset,ii;
 	ratio=ds/dh;
 	geoind=(g-s[0])/ds;
 	smalloffset=geoind - (int)(h[0]/ds);
 	bigoffset=max(0,smalloffset - (int)((nh-1)/ratio));
 	lengeos=smalloffset - bigoffset+1;
-	for(int ii=0;ii<lengeos;ii++)
+	for(ii=0;ii<lengeos;ii++)
 		geos[ii]=(bigoffset+ii)*nh + (lengeos-ii-1)*ratio;
 	
 	return lengeos;

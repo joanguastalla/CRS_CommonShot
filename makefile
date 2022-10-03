@@ -7,39 +7,43 @@ CC=gcc
 # Compiler flags:
 # -g Add debuging information to the executable file
 # -Wall turn on most of compiler warnings
-CFLAGS= -std=c99 -c -g -Wall -pedantic
+CFLAGS=-Wall  
 
 # Define Library paths to include
-LFLAGS=-L/usr/lib/x86_64-linux-gnu
-
+LFLAGS=-L/usr/lib/x86_64-linux-gnu 
+OPENMP=-fopenmp
 # Define libraries to be used
-LIBS= -lm 
+LIBS= -lm -lblas -llapack 
 
-# Define C source files
-SRC=commonreceiver.c
 
 # Header files for SRC
-HCUBIC=mathutils.h
+HCUBIC=mathutils.h	seismicutils.h omp.h 
  
 # Construction of .o files
-OBJCUBIC=commonreceiver.o mathutils.o
+OBJCUBIC=commonreceiver.o mathutils.o cubicinterpol.o  crs_commmonshot.o
+
+# Joining file object
+SRC=testcrs.o
 
 #Targets not constructed as files
 .PHONY=all 
 
 # Name of executable file
-MAIN=commonreceiver
+MAIN=testcrs
 
 
-all: $(OBJCUBIC) $(MAIN)
+all: $(MAIN)
 	@echo Compiling executable $(MAIN)
 
 
-$(MAIN): $(OBJCUBIC) 
-	$(CC) -o $@ $^ $(LFLAGS) $(LIBS)
+$(MAIN): $(SRC) $(OBJCUBIC)  
+	$(CC) $(OPENMP) -o $@ $^ $(LFLAGS) $(LIBS) 
+
+$(SRC):	testcrs.c
+	$(CC) $(CFLAGS) $(OPENMP) -c -o $@ $< 
 
 %.o: %.c $(HCUBIC)
-	$(CC) -o $@ $< $(CFLAGS)
+	$(CC) -o $@ $< $(CFLAGS) 
 
 clean:
 	rm -f *.o
