@@ -22,9 +22,9 @@
 
 
 unsigned CommonReceiver(double* s,int* geos,double* h,double ds,double dh,unsigned nh,double g){
-	double ratio;
-	unsigned geoind,bigoffset,lengeos,smalloffset,ii;
-	ratio=ds/dh;
+	int ratio,bigoffset,smalloffset;
+	unsigned geoind,lengeos,ii;
+	ratio=2;
 	geoind=(g-s[0])/ds;
 	smalloffset=geoind - (int)(h[0]/ds);
 	bigoffset=max(0,smalloffset - (int)((nh-1)/ratio));

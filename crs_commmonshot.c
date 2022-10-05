@@ -68,12 +68,13 @@ crs_t CRSCommonShot(double m0,double t0,const unsigned nt,float *u,seis_t* h,sei
 	crs_t paramCRS;
 	FILE* Plots;
 	Plots=fopen("./Fig/Curves.txt","w");
-	int ww,nsw,ii,jump,contador;
+	int ww,nsw,ii,jump,contador,sz;
 	unsigned ind,shotind,lengeos,nh;
 	int	traces[h->n];
 	int geos[(int)(h->n/(s->delta/h->delta))];
 	double ndown,nsamples,factor,sumaux,squareAmps,innerAmps,Amp,semblanceMax,alpha;
 	double v[2],alfaMax[2],velMax[2],semblance[2];
+	sz=140;
 	semblanceMax=0;
 	lengeos=CommonReceiver(s->data,geos,h->data,s->delta,h->delta,h->n,m0);
 	nh=lengeos + h->n;
@@ -81,21 +82,21 @@ crs_t CRSCommonShot(double m0,double t0,const unsigned nt,float *u,seis_t* h,sei
 	// Assignment of negative offsets for a common-receiver section at m0
 	Linspace(hminus,-h->data[0]-(lengeos-1)*s->delta,s->delta,lengeos);
 	shotind=(int)(m0/(s->delta))*h->n;
-	INTLinspace(traces,shotind,1,h->n);
+	INTLinspace(traces,shotind,1,sz);
 	ndown=min(t0/dt,(int)(tdown/dt));
 	nsamples=(int)(tup/dt)+ ndown; 
 	// semblance windowing size
 	nsw=w/dt;
 	// Manual allocation of memory for vectorized functions
 	double offsets[nh];
-	double squareHolder[h->n];
-	double factorTime[h->n];
+	double squareHolder[sz];
+	double factorTime[sz];
 	int   stackTraces[nh];
-	double alphaCurve[h->n];
-	double dCurve[h->n];
+	double alphaCurve[sz];
+	double dCurve[sz];
 	Arraymerge(offsets,hminus,h->data,lengeos,h->n);
 	INTArraymerge(stackTraces,geos,traces,lengeos,h->n);
-	Vpower(squareHolder,h->data,h->n,2);
+	Vpower(squareHolder,h->data,sz,2);
 	//	
 	//		Loops in alpha and jump are called parameter loops, since that is all we need 
 	//	to build hyperbolic traveltime of Common-Shot sections in a 2D Medium.
@@ -116,30 +117,31 @@ crs_t CRSCommonShot(double m0,double t0,const unsigned nt,float *u,seis_t* h,sei
 	// alfaMax[2] -   Stores angles of previous greatest Semblance and the actual looping alpha.
 	contador=0;
 	for(alpha=alphamin;alpha<alphamax;alpha+=dalpha){
+		printf("%d\n",contador);
 		semblance[0]=0;
 		factor=sin(alpha)/v0;
-		Vscale(alphaCurve,h->data,h->n,factor);
-		VsumScalar(alphaCurve,alphaCurve,h->n,t0);
-		Vpower(alphaCurve,alphaCurve,h->n,2);
+		Vscale(alphaCurve,h->data,sz,factor);
+		VsumScalar(alphaCurve,alphaCurve,sz,t0);
+		Vpower(alphaCurve,alphaCurve,sz,2);
 		for(jump=0;jump<nsamples;jump+=hyperbolaJump){
 			squareAmps=0;
 			innerAmps=0;
-			v[1]=(pow((t0 +(jump-ndown)*dt),2) - alphaCurve[h->n-1])/squareHolder[h->n-1];
-			Vscale(factorTime,squareHolder,h->n,v[1]);
-			Vsum(dCurve,alphaCurve,factorTime,h->n);
-			Vabs(dCurve,dCurve,h->n);
-			Vsqrt(dCurve,dCurve,h->n);
+			v[1]=(pow((t0 +(jump-ndown)*dt),2) - alphaCurve[sz-1])/squareHolder[sz-1];
+			Vscale(factorTime,squareHolder,sz,v[1]);
+			Vsum(dCurve,alphaCurve,factorTime,sz);
+			Vabs(dCurve,dCurve,sz);
+			Vsqrt(dCurve,dCurve,sz);
 			for(ww=-nsw;ww<=nsw;ww++){
 				sumaux=0;
-				for(ii=0;ii<h->n;ii++){
-				//	Amp=Cubicinterpol(nt,dt,u+nt*traces[ii],dCurve[ii] + ww*dt);	
-					Amp=*(u + nt*traces[ii] + (int)(dCurve[ii]/dt) + ww);
+				for(ii=0;ii<sz;ii++){
+					Amp=Cubicinterpol(nt,dt,u+nt*traces[ii],dCurve[ii] + ww*dt);	
+			//		Amp=(*(u + nt*traces[ii] + (int)floor(dCurve[ii]/dt) + ww) + *(u + nt*traces[ii] + (int)ceil(dCurve[ii]/dt) + ww))/2; 
 					squareAmps+=pow(Amp,2);
 					sumaux+=Amp;
 				}
 				innerAmps+=pow(sumaux,2);
 		   	}
-			semblance[1]=innerAmps/(h->n*squareAmps + 1e-40);
+			semblance[1]=innerAmps/(sz*squareAmps + 1e-40);
 			ind=indmax(semblance[0],semblance[1]);
 			semblance[0]=semblance[ind];
 			v[0]=v[ind];

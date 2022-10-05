@@ -46,13 +46,12 @@
 
 double Cubicinterpol(int len,double dt,float* s,double t){
     int ind,n = N,info,nrhs=1;
-	double alpha[2],pt;
+	double alpha[2];
     double A[N][N];
     double b[N];
 	double tmp,piso;
     int ipiv[N];
-	pt=(t>0)?t:0;
-	tmp=pt/dt;
+	tmp=t/dt;
 	piso=floor(tmp);
 	ind=(int)tmp;
 	if(t==piso*dt){
@@ -60,9 +59,8 @@ double Cubicinterpol(int len,double dt,float* s,double t){
     } 
     else{
 		ind=min(ind,len-2);
-		alpha[0]=(ind>0)?(s[ind+1]-s[ind-1])/(2*dt):(s[ind+1]-s[ind])/dt;
-		alpha[1]=(ind<(len-2))?(s[ind+2]-s[ind])/(2*dt):
-				 (s[ind+1]-s[ind])/dt; 
+		alpha[0]=(s[ind+1]-s[ind-1])/(2*dt);
+		alpha[1]=(s[ind+2]-s[ind])/(2*dt);
        	for(int ii=0;ii<DERIVATECOND;ii++){
             for(int jj=(N-1);jj>=0;jj-=1){
                 A[ii][(N-1)-jj]=pow((ind+ii)*dt,jj);
@@ -80,10 +78,7 @@ double Cubicinterpol(int len,double dt,float* s,double t){
         b[3]=alpha[1];
         
 		LAPACK_dgesv(&n,&nrhs,&A[0][0],&n,ipiv,b,&n,&info);
-        if(info!=0){
-			printf("Problem in solving linear system");
-		}
-		return (b[0]*pow(pt,3) + b[1]*pow(pt,2)+ b[2]*pt + b[3]);
+		return (b[0]*pow(t,3) + b[1]*pow(t,2)+ b[2]*t + b[3]);
 	}
 		
 }
